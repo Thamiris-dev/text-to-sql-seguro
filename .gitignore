@@ -1,0 +1,28 @@
+
+# Ambiente virtual
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Segredos e configurações locais
+.env
+.env.*
+!.env.example
+
+# Banco de dados local
+*.duckdb
+*.sqlite
+*.sqlite3
+
+# Logs e arquivos temporários
+*.log
+
+# Sistema operacional e editor
+.DS_Store
+Thumbs.db
