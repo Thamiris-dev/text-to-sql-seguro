@@ -6,6 +6,7 @@ from sqlglot import exp
 def validate_sql(
     query: str,
     allowed_tables: set[str] | None = None,
+    max_rows: int = 100,
 ) -> dict:
     """Permite somente consultas SELECT em tabelas autorizadas."""
 
@@ -20,6 +21,15 @@ def validate_sql(
             "allowed": False,
             "reason": "Nenhuma tabela autorizada foi configurada.",
         }
+    if (
+        not isinstance(max_rows, int)
+        or isinstance(max_rows, bool)
+        or max_rows < 1
+    ):
+        return {
+        "allowed": False,
+        "reason": "O limite máximo de linhas precisa ser um inteiro positivo.",
+    }
 
     try:
         statements = sqlglot.parse(query, read="duckdb")
@@ -42,6 +52,41 @@ def validate_sql(
             "allowed": False,
             "reason": "Somente consultas de leitura são permitidas.",
         }
+
+    limit = statement.args.get("limit")
+
+    if limit is None:
+        return {
+            "allowed": False,
+            "reason": "A consulta precisa informar um limite de linhas (LIMIT).",
+        }
+
+    if not isinstance(limit.expression, exp.Literal):
+        return {
+            "allowed": False,
+            "reason": "O limite de linhas precisa ser um número inteiro.",
+        }
+
+    if limit.expression.is_string:
+        return {
+            "allowed": False,
+            "reason": "O limite de linhas precisa ser um número inteiro.",
+        }
+
+    try:
+        requested_rows = int(limit.expression.this)
+    except (ValueError, TypeError):
+        return {
+            "allowed": False,
+            "reason": "O limite de linhas informado é inválido.",
+        }
+
+    if requested_rows < 1 or requested_rows > max_rows:
+        return {
+            "allowed": False,
+            "reason": f"O limite máximo permitido é de {max_rows} linhas.",
+        }
+    
 
     external_functions = {
         "READ_CSV",
